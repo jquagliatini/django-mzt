@@ -24,7 +24,7 @@ class TimerSequence(models.Model):
         now: datetime = datetime.now(),
     ) -> "TimerSequence":
         assert len(timers) > 0, "expected a non empty list of timers"
- 
+
         with transaction.atomic():
             session = Session.objects.get(session_key=session_key)
             sequence = TimerSequence(name=name, created_by=session, created_at=now)
