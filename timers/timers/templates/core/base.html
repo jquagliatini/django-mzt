@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🍅 Mozza Timer</title>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  </head>
+  <body class="min-h-full dark:text-neutral-200 dark:bg-neutral-900">
+    {% include 'core/icons.html' %}
+    <nav class="bg-gray-100 px-4 py-2 dark:bg-neutral-700">
+      <span class="text-2xl font-light">🍅 mozza</span>
+    </nav>
+    <main class="mt-4 md:max-w-2xl md:mx-auto px-4 pt-6 pb-2 min-h-10/12">
+      {% block content %}<p class="p-2 text-red-400 rounded shadow my-2">NO CONTENT TO DISPLAY</p>{% endblock %}
+    </main>
+  </body>
+</html>

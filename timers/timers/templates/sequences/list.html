@@ -1,0 +1,18 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+{% block content %}
+  <h2 class="text-3xl font-thin">timer sequences</h2>
+  {% if sequences %}
+    <div>
+      <ul>
+        {% for sequence in sequences %}<li>{{ sequence.name }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+  <div class="mt-4">
+    <a href="{% url 'create_sequence' %}"
+       class="bg-red-400 hover:bg-red-300 duration-100 transition-colors rounded uppercase text-white px-2 py-1 cursor-pointer">
+      {% translate "+ add one" %}
+    </a>
+  </div>
+{% endblock content %}

@@ -1,0 +1,13 @@
+{% extends "core/base.html" %}
+{% load i18n components %}
+{% block content %}
+  <h2 class="text-3xl font-thin">{% translate "add a timer sequence" %}</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      {{ form }}
+      {{ formset }}
+    </div>
+    <button class="mt-6 {% cx 'button' %}">{% translate 'create the timer sequence' context 'form submission' %}</button>
+  </form>
+{% endblock content %}
