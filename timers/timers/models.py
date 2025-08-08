@@ -39,7 +39,7 @@ class TimerSequence(models.Model):
 
 
 class TimerSequenceDuration(models.Model):
-    timer_sequence = models.ForeignKey(TimerSequence, on_delete=models.CASCADE)
+    timer_sequence = models.ForeignKey(TimerSequence, on_delete=models.CASCADE, related_name='durations')
 
     index = models.IntegerField()
     duration = models.DurationField()

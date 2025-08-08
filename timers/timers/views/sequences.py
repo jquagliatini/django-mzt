@@ -1,5 +1,5 @@
 from datetime import timedelta
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -16,7 +16,10 @@ def listSequences(request: HttpRequest):
         request.session.save()
         session_key = request.session.session_key
 
-    paginator = Paginator(TimerSequence.objects.filter(created_by=session_key), 25)
+    paginator = Paginator(
+        TimerSequence.objects.filter(created_by=session_key).prefetch_related('durations'),
+        25,
+    )
     page = request.GET.get("page")
     sequences = paginator.get_page(page)
 
@@ -31,6 +34,10 @@ def createSequence(request: HttpRequest):
     if request.method == "POST":
         form = TimerSequenceForm(request.POST)
         formset = TimerSequenceDurationFormSet(request.POST)
+
+        print("DEBUG")
+        print(request.POST)
+        print([x["duration"].value() for x in formset])
 
         if form.is_valid() and formset.is_valid():
             name: str = form["name"].value()
@@ -72,3 +79,18 @@ def createSequence(request: HttpRequest):
         formset = TimerSequenceDurationFormSet()
 
     return render(request, "sequences/create.html", {"form": form, "formset": formset})
+
+def start_sequence(request: HttpRequest):
+    if request.method != 'POST':
+        HttpResponseNotFound()
+
+    """
+    sequence_id = request.POST.get('id')
+    if sequence_id is None:
+        return HttpResponseNotFound()
+
+    sequence = TimerSequence.objects.get(pk=sequence_id)
+    run = sequence.run()
+    """
+
+    return HttpResponseServerError('NotImplemented')

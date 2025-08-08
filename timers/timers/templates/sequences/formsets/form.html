@@ -73,6 +73,9 @@
       const count = updateTimeInputIdAndName();
       const $counter = document.getElementById('js_timersCount');
       if ($counter) $counter.innerText = `(${count})`;
+
+      const $input = document.getElementById('id_form-TOTAL_FORMS');
+      if ($input) $input.value = count;
     });
   }
 
@@ -118,6 +121,9 @@
       const count = updateTimeInputIdAndName();
       const $counter = document.getElementById('js_timersCount');
       if ($counter) $counter.innerText = `(${count})`;
+
+      const $input = document.getElementById('id_form-TOTAL_FORMS');
+      if ($input) $input.value = count;
     });
   }
 

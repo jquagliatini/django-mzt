@@ -12,3 +12,4 @@ timers/db.sqlite3
 # Virtual environments
 .venv
 node_modules
+.ruff_cache
