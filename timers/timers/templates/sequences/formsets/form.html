@@ -1,51 +1,78 @@
 {% load i18n components %}
-{{ formset.management_form }}
-<ol id="sequence_formset_container" class="flex flex-col gap-y-2 w-64">
-  {% for form in formset %}
-    {% with form.duration as value %}
-      <li>
-        <div class="flex flex-row items-center">
-          <input type="time"
-                 max="23:59:59"
-                 step="1"
-                 id="id-{{ forloop.counter0 }}-duration"
-                 name="form-{{ forloop.counter0 }}-duration"
-                 class="{% cx 'input' %}"
-                 {% if value.value != None %}value="{{ value.value | stringformat:'s' }}"{% endif %}
-                 {% if value.errors|length > 0 %}aria-invalid{% endif %} />
-          <button class="js_removeItem" className="text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="block dark:hidden cursor-pointer size-9 text-red-500 rounded-full ml-1 p-2 hover:bg-red-50/80 transition-colors duration-100">
-              <use href="#icon.trash" />
-            </svg>
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="hidden dark:block cursor-pointer size-9 text-red-500 rounded-full ml-1 p-2 hover:bg-red-50/80 transition-colors duration-100">
-              <use href="#icon.trash_filled" />
-            </svg>
-          </button>
-        </div>
-        {% if value.errors|length == 1 %}
-          <p class="text-red-500">{{ value.errors|first }}</p>
-        {% elif value.errors|length > 1 %}
-          <ul class="list-inside list-disc text-red-500 text-xs">
-            {% for error in value.error %}<li>{{ error }}</li>{% endfor %}
-          </ul>
-        </li>
-      {% endif %}
-    {% endwith %}
-  {% endfor %}
-</ol>
-<button id="js_addElement" class="mt-2 {% cx 'button' variant='secondary' %}">{% translate "+ add" %}</button>
+<div class="w-64">
+  {{ formset.management_form }}
+  <div class="flex flex-row justify-between items-center">
+    <div class="capitalize" id="duration_description">
+      {% blocktranslate with count=formset.forms|length %}timers <span id="js_timersCount">({{ count }})</span>{% endblocktranslate %}
+    </div>
+    <button id="js_addElement" class="{% cx 'button' variant='secondary' %}">{% translate "+ add" %}</button>
+  </div>
+  <ol id="sequence_formset_container" class="flex flex-col gap-y-2 mt-2">
+    {% for form in formset %}
+      {% with form.duration as value %}
+        <li>
+          <div class="flex flex-row items-center">
+            <input type="time"
+                   max="23:59:59"
+                   step="1"
+                   id="id-{{ forloop.counter0 }}-duration"
+                   name="form-{{ forloop.counter0 }}-duration"
+                   class="{% cx 'input' %}"
+                   {% if forloop.first %}aria-describedby="duration_description"{% endif %}
+                   {% if value.value != None %}value="{{ value.value | stringformat:'s' }}"{% endif %}
+                   {% if value.errors|length > 0 %}aria-invalid{% endif %} />
+            <button class="js_removeItem" className="text-red-500">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="block dark:hidden cursor-pointer size-9 text-red-500 rounded-full ml-1 p-2 hover:bg-red-50/80 transition-colors duration-100">
+                <use href="#icon.trash" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="hidden dark:block cursor-pointer size-9 text-red-500 rounded-full ml-1 p-2 hover:bg-red-50/80 transition-colors duration-100">
+                <use href="#icon.trash_filled" />
+              </svg>
+            </button>
+          </div>
+          {% if value.errors|length == 1 %}
+            <p class="text-red-500">{{ value.errors|first }}</p>
+          {% elif value.errors|length > 1 %}
+            <ul class="list-inside list-disc text-red-500 text-xs">
+              {% for error in value.error %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          </li>
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </ol>
+</div>
 <script>
   var data = JSON.parse(`{
     "count": {{ formset | length }}
   }`);
 
+  /** @return {number} the number of items updated */
+  function updateTimeInputIdAndName() {
+    const $inputs = document
+      .getElementById('sequence_formset_container')
+      ?.querySelectorAll('input[type="time"]') ?? [];
+
+    for (let i = 0; i < $inputs.length; i++) {
+      const $input = $inputs.item(i);
+      $input.id = `id-${i}-duration`;
+      $input.name = `form-${i}-duration`;
+    }
+      
+    return $inputs.length;
+  }
+
   /** @param {HTMLButtonElement} $btn */
   function registerRemoveElementButton($btn) {
     $btn.addEventListener('click', function onRemoveItem(event) {
       event.preventDefault();
-      event.target.parentElement.parentElement.remove()
+      $btn.parentElement.parentElement.remove();
+
+      const count = updateTimeInputIdAndName();
+      const $counter = document.getElementById('js_timersCount');
+      if ($counter) $counter.innerText = `(${count})`;
     });
   }
 
@@ -58,15 +85,13 @@
     $btnAddElement.addEventListener('click', function onClick(e) {
       e.preventDefault();
   
-      const targetIndex = counter++;
-  
       const $targetInput = document.createElement('input');
       $targetInput.type = 'time';
       $targetInput.max = '23:59:59';
       $targetInput.value = '00:10:00';
       $targetInput.step = '1';
-      $targetInput.name = `form-${targetIndex}-duration`;
-      $targetInput.id = `id-${targetIndex}-duration`;
+      $targetInput.name = `form-NaN-duration`;
+      $targetInput.id = `id-NaN-duration`;
   
       const classes = `{% cx 'input' %}`
       $targetInput.classList.add(...classes.split(/\s+/m).filter(Boolean));
@@ -89,16 +114,11 @@
       $targetLi.appendChild($targetDiv);
       $root.appendChild($targetLi);
       $targetInput.focus();
+
+      const count = updateTimeInputIdAndName();
+      const $counter = document.getElementById('js_timersCount');
+      if ($counter) $counter.innerText = `(${count})`;
     });
-  }
-
-  /** @param {HTMLElement} $root */
-  function registerRemoveElementButtons($root) {
-    const $btns = $root.getElementsByClassName('js_removeItem');
-
-    for (const $btn of $btns) {
-      registerRemoveElementButton($btn);
-    }
   }
 
   document.addEventListener('DOMContentLoaded', function onDomReady() {
@@ -106,6 +126,10 @@
     if (!$formContainer) return;
   
     registerAddElementButton($formContainer);
-    registerRemoveElementButtons($formContainer);
+
+    const $btns = $root.getElementsByClassName('js_removeItem');
+    for (const $btn of $btns) {
+      registerRemoveElementButton($btn);
+    }
   });
 </script>

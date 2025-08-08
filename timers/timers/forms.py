@@ -1,4 +1,5 @@
 from django import forms
+import timers.lib.classes as c
 
 class _TimerSequenceDurationForm(forms.Form):
   template_name_div = 'sequences/formsets/form.html'
@@ -11,4 +12,9 @@ TimerSequenceDurationFormSet = forms.formset_factory(
 )
 
 class TimerSequenceForm(forms.Form):
-  name = forms.CharField(max_length=2048)
+  name = forms.CharField(
+    label='',
+    label_suffix='',
+    max_length=2048,
+    widget=forms.TextInput(attrs={'class': c.input() }),
+  )
