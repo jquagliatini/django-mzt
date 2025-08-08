@@ -61,7 +61,7 @@ class TimerComponent extends HTMLElement {
           p !== null &&
           'startedAt' in p &&
           typeof p.startedAt === 'string' &&
-          ('endedAt' in p ? typeof p.endedAt === 'string' : true)
+          (typeof p.endedAt === 'string' || p.endedAt == null)
       )
       .map(({ startedAt, endedAt }) => ({
         startedAt: new Date(startedAt),
@@ -92,13 +92,13 @@ class TimerComponent extends HTMLElement {
   }
 
   #formatTime(timeMs) {
-    const SECONDS = 60_000;
+    const SECONDS = 1_000;
     const MINUTES = 60 * SECONDS;
     const HOURS = 60 * MINUTES;
 
     const hours = Math.round(timeMs / HOURS);
-    const minutes = Math.round((timeMs - hours * HOURS) / MINUTES);
-    const seconds = Math.round((timeMs - minutes * MINUTES - hours * HOURS) / SECONDS);
+    const minutes = Math.round((timeMs / MINUTES) % 60);
+    const seconds = Math.round((timeMs / SECONDS) % 60);
 
     return (hours > 0 ? [hours, minutes, seconds] : [minutes, seconds])
       .map((x) => x.toString().padStart(2, '0'))
@@ -111,14 +111,17 @@ class TimerComponent extends HTMLElement {
 
   /** @param {TimerRunning | TimerPaused | TimerEnded} was */
   async render(was) {
+    const $pastTimersList = this.#root.querySelector('.mzt-timers-past');
+    const $futureTimersList = this.#root.querySelector('.mzt-timers-future');
+
     for (const state of this.timer) {
-      const $arcContainer = this.#root.querySelector('.arc-container');
+      const $arcContainer = this.#root.querySelector('.mzt-arc-container');
 
       if ((state.state === 'paused' || state.state === 'running') && was.state !== state.state) {
         if ($arcContainer) {
           $arcContainer.innerHTML = html`
             <svg xmlns="http://www.w3.org/2000/svg" class="size-12 shrink-0 grow-0">
-              ${state.state === 'paused'
+              ${state.state === 'running'
                 ? html`
                     <use class="dark:block hidden" href="#icon.pause_filled"></use>
                     <use class="dark:hidden block" href="#icon.pause"></use>
@@ -129,15 +132,31 @@ class TimerComponent extends HTMLElement {
                   `}
             </svg>
           `;
-          was.state = state.state;
         }
+        was.state = state.state;
       }
 
       const degs = state.state === 'ended' ? 0 : ((state.remainingTimeMs ?? 0) / state.currentTimer) * 360;
       $arcContainer.style.setProperty('--progress', `${degs}deg`);
-      this.#root.querySelector('.time').innerText = this.#formatTime(
+      this.#root.querySelector('.mzt-time').innerText = this.#formatTime(
         state.state === 'ended' ? 0 : state.remainingTimeMs
       );
+
+      const shouldUpdateLists = $pastTimersList.dataset.timers.split(',').length !== state.pastTimers.length;
+      if (shouldUpdateLists) {
+        const pastTimer = state.pastTimers.at(-1);
+        const $pastTimer = $('li', {
+          className: 'line-through gray-600 dark:text-gray-200',
+          innerText: this.#formatTime(pastTimer),
+        });
+        $pastTimer.dataset.timer = pastTimer;
+
+        $pastTimersList.appendChild($pastTimer);
+        $pastTimersList.dataset.timers = state.pastTimers.join(',');
+
+        $futureTimersList.firstChild.remove();
+        $futureTimersList.dataset.timers = state.futureTimers.join(',');
+      }
 
       await wait(200);
     }
@@ -153,17 +172,38 @@ class TimerComponent extends HTMLElement {
   async initialRender() {
     const timerState = this.timer.state();
 
+    const $pastTimersList = $('ul', { className: 'w-full text-center mzt-timers-past' });
+    $pastTimersList.dataset.timers = timerState.pastTimers.join(',');
+    for (const pastTimer of timerState.pastTimers) {
+      const $timer = $('li', {
+        className: 'line-through text-gray-600 dark:text-gray-200',
+        innerText: this.#formatTime(pastTimer),
+      });
+      $timer.dataset.timer = pastTimer;
+
+      $pastTimersList.appendChild($timer);
+    }
+
+    const $futureTimersList = $('ul', { className: 'w-full text-center mzt-timers-future' });
+    $futureTimersList.dataset.timers = timerState.futureTimers.join(',');
+    for (const futureTimer of timerState.futureTimers) {
+      const $timer = $('li', { innerText: this.#formatTime(futureTimer) });
+      $timer.dataset.timer = futureTimer;
+
+      $futureTimersList.appendChild($timer);
+    }
+
     let $form = $('form', { method: 'POST', action: '', className: 'relative size-[200px]' }, [
       $(
         'button',
         {
           disabled: timerState.state === 'ended',
-          className: `arc-container rounded size-full flex justify-center items-center ${
+          className: `mzt-arc-container rounded size-full flex justify-center items-center ${
             timerState.state === 'ended' ? 'cursor-not-allowed' : 'cursor-pointer'
           }`,
           innerHTML: html`
             <svg xmlns="http://www.w3.org/2000/svg" class="size-12 shrink-0 grow-0">
-              ${timerState.state === 'paused'
+              ${timerState.state === 'running'
                 ? html`
                     <use class="dark:block hidden" href="#icon.pause_filled"></use>
                     <use class="dark:hidden block" href="#icon.pause"></use>
@@ -176,8 +216,8 @@ class TimerComponent extends HTMLElement {
           `,
         },
         [
-          $('div', { className: 'arc-bg' }),
-          $('div', { className: 'arc absolute top-0 bottom-0 left-0 right-0' }),
+          $('div', { className: 'mzt-arc-bg' }),
+          $('div', { className: 'mzt-arc absolute top-0 bottom-0 left-0 right-0' }),
         ]
       ),
     ]);
@@ -193,12 +233,12 @@ class TimerComponent extends HTMLElement {
     const styles = $('style', [
       // prettier-ignore
       document.createTextNode(html`
-        .arc-container {
+        .mzt-arc-container {
           --progress: ${degs}deg;
           --arc-border-width: 20px;
         }
 
-        .arc {
+        .mzt-arc {
             width: 200px;
             aspect-ratio: 1;
             padding: var(--arc-border-width);
@@ -211,7 +251,7 @@ class TimerComponent extends HTMLElement {
               conic-gradient(#000 var(--progress),#0000 0);
         }
 
-        .arc-bg {
+        .mzt-arc-bg {
           position: absolute;
           top: 0; right: 0; bottom: 0; left: 0;
           width: 200px;
@@ -222,21 +262,33 @@ class TimerComponent extends HTMLElement {
       `),
     ]);
 
-    const $container = $('div', { className: timerState.state === 'ended' ? 'opacity-50' : '' }, [
-      styles,
-      $form,
-      $('div', {
-        innerText: this.#formatTime(timerState.state === 'ended' ? 0 : timerState.remainingTimeMs),
-        className: 'mt-4 text-5xl font-black text-center tabular-nums time dark:text-white',
-      }),
-    ]);
+    const $container = $(
+      'div',
+      { className: `flex flex-col gap-y-4 ${timerState.state === 'ended' ? 'opacity-50' : ''}` },
+      [
+        styles,
+        $pastTimersList,
+        $form,
+        $('div', {
+          innerText: this.#formatTime(timerState.state === 'ended' ? 0 : timerState.remainingTimeMs),
+          className: 'mzt-time mt-4 text-5xl font-black text-center tabular-nums dark:text-white',
+        }),
+        $futureTimersList,
+      ]
+    );
 
     // FLUSH
+    while (this.firstChild) {
+      this.firstChild.remove();
+    }
+
     this.appendChild($container);
     this.#root = $container;
 
     await wait(100);
-    this.render(timerState);
+    if (timerState.state === 'running') {
+      this.render(timerState);
+    }
   }
 }
 

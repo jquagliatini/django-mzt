@@ -5,15 +5,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('timers', '0002_timers_replace_created_by_by_session'),
+        ("timers", "0002_timers_replace_created_by_by_session"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='timersequenceduration',
-            name='timer_sequence',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='durations', to='timers.timersequence'),
+            model_name="timersequenceduration",
+            name="timer_sequence",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="durations",
+                to="timers.timersequence",
+            ),
         ),
     ]

@@ -1,9 +1,10 @@
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.http import HttpRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.db.models import Prefetch
 from django.db import transaction
@@ -21,7 +22,9 @@ def listSequences(request: HttpRequest):
         session_key = request.session.session_key
 
     paginator = Paginator(
-        TimerSequence.objects.filter(created_by=session_key).prefetch_related('durations'),
+        TimerSequence.objects.filter(created_by=session_key).prefetch_related(
+            "durations"
+        ),
         25,
     )
     page = request.GET.get("page")
@@ -62,7 +65,10 @@ def createSequence(request: HttpRequest):
                         pass
 
             TimerSequence.create(
-                name=name, timers=timers, session_key=request.session.session_key
+                name=name,
+                timers=timers,
+                session_key=request.session.session_key,
+                now=timezone.now(),
             )
             messages.add_message(
                 request,
@@ -84,14 +90,16 @@ def createSequence(request: HttpRequest):
 
     return render(request, "sequences/create.html", {"form": form, "formset": formset})
 
+
 def run_sequence(request: HttpRequest, sequence_id: int):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponseNotFound()
 
     sequence = TimerSequence.objects.get(pk=sequence_id)
-    run = sequence.run(datetime.now())
+    run = sequence.run(timezone.now())
 
-    return redirect('detail_sequence_run', sequence_id=sequence_id, run_id=run.pk)
+    return redirect("detail_sequence_run", sequence_id=sequence_id, run_id=run.pk)
+
 
 @transaction.atomic
 def detail_sequence_run(request: HttpRequest, sequence_id: int, run_id: int):
@@ -101,18 +109,32 @@ def detail_sequence_run(request: HttpRequest, sequence_id: int, run_id: int):
         request.session.save()
         session_key = request.session.session_key
 
-    sequence = TimerSequence.objects.filter(pk=sequence_id, created_by=session_key).prefetch_related(
-        Prefetch("runs", queryset=TimerSequenceRun.objects.filter(pk=run_id))
-    ).get()
+    sequence = (
+        TimerSequence.objects.filter(pk=sequence_id, created_by=session_key)
+        .prefetch_related(
+            Prefetch("runs", queryset=TimerSequenceRun.objects.filter(pk=run_id))
+        )
+        .get()
+    )
 
-    run: TimerSequenceRun = sequence.runs.get() # type: ignore
+    run: TimerSequenceRun = sequence.runs.get()  # type: ignore
 
-    if request.method == 'POST':
-        run.toggle(datetime.now()) # type: ignore
-        id = run.pk # type: ignore
+    if request.method == "POST":
+        run.toggle(timezone.now())  # type: ignore
+        id = run.pk  # type: ignore
         run = TimerSequenceRun.objects.get(pk=id)
-    
-    timers = [x.duration for x in sequence.durations.all()] # type: ignore
-    pauses = json.dumps([{ 'startedAt': x.started_at, 'endedAt': x.ended_at } for x in run.pauses.all()]) # type: ignore
 
-    return render(request, 'sequences/run.html', { 'run': run, 'pauses': pauses, 'timers': timers })
+    timers = [x.duration for x in sequence.durations.all()]  # type: ignore
+    pauses = json.dumps(
+        [
+            {
+                "startedAt": x.started_at.isoformat(timespec="milliseconds"),  # type: ignore
+                "endedAt": x.ended_at.isoformat() if x.ended_at is not None else None,  # type: ignore
+            }
+            for x in run.pauses.all()  # type: ignore
+        ]
+    )
+
+    return render(
+        request, "sequences/run.html", {"run": run, "pauses": pauses, "timers": timers}
+    )

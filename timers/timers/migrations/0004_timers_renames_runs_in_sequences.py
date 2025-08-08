@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('timers', '0003_timers_renamed_sequence_durations'),
+        ("timers", "0003_timers_renamed_sequence_durations"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='timersequencerun',
-            name='timer_sequence',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='runs', to='timers.timersequence'),
+            model_name="timersequencerun",
+            name="timer_sequence",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="runs",
+                to="timers.timersequence",
+            ),
         ),
     ]

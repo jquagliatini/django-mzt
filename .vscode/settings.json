@@ -3,6 +3,10 @@
   "[jinja][html]": {
     "editor.defaultFormatter": "monosans.djlint"
   },
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": true,
+  "python.testing.autoTestDiscoverOnSaveEnabled": false,
+  "python.testing.unittestArgs": ["-v", "3", "-p", "*_test.py"],
   "nodejs-testing.extensions": [{ "parameters": [], "extensions": ["mjs", "cjs", "js"] }],
   "sqltools.useNodeRuntime": true,
   "sqltools.connections": [

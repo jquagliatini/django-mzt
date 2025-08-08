@@ -1,4 +1,3 @@
-from typing import cast
 from datetime import datetime, timedelta
 from django.db import models, transaction
 from django.contrib.sessions.models import Session
@@ -39,7 +38,9 @@ class TimerSequence(models.Model):
 
 
 class TimerSequenceDuration(models.Model):
-    timer_sequence = models.ForeignKey(TimerSequence, on_delete=models.CASCADE, related_name='durations')
+    timer_sequence = models.ForeignKey(
+        TimerSequence, on_delete=models.CASCADE, related_name="durations"
+    )
 
     index = models.IntegerField()
     duration = models.DurationField()
@@ -58,7 +59,7 @@ class TimerSequenceDuration(models.Model):
 
 class TimerSequenceRun(models.Model):
     timer_sequence = models.ForeignKey(
-        TimerSequence, null=True, on_delete=models.SET_NULL, related_name='runs'
+        TimerSequence, null=True, on_delete=models.SET_NULL, related_name="runs"
     )
     timer_sequence_name = models.TextField()
     started_at = models.DateTimeField(null=True)
@@ -72,14 +73,13 @@ class TimerSequenceRun(models.Model):
         return run
 
     def is_paused(self):
-        running_pause = cast(
-            TimerSequencePause | None,
+        try:
             TimerSequencePause.objects.filter(
-                timer_sequence=self, ended_at__isnull=True
-            )[0],
-        )
-
-        return running_pause is not None
+                timer_sequence_run=self, ended_at__isnull=True
+            ).get()
+            return True
+        except TimerSequencePause.DoesNotExist:
+            return False
 
     def is_ended(self, now: datetime) -> bool:
         if self.started_at is None or self.is_paused():
@@ -92,14 +92,14 @@ class TimerSequenceRun(models.Model):
         for sequence in sequences:
             total_duration += sequence.duration
 
-        pauses = TimerSequencePause.objects.filter(timer_sequence=self.timer_sequence)
+        pauses = TimerSequencePause.objects.filter(timer_sequence_run=self).all()
         for pause in pauses:
             if pause.ended_at is None:
                 continue
             total_duration += pause.ended_at - pause.started_at
 
-        return self.started_at + total_duration > now
-    
+        return self.started_at + total_duration <= now
+
     def toggle(self, now: datetime):
         if self.is_ended(now):
             return
@@ -114,7 +114,7 @@ class TimerSequenceRun(models.Model):
             raise ValidationError(_("timer {id} ended") % {"id": self.pk})
 
         running_pause = TimerSequencePause.objects.get(
-            timer_sequence=self, ended_at__isnull=True
+            timer_sequence_run=self, ended_at__isnull=True
         )
 
         running_pause.ended_at = now
@@ -127,11 +127,15 @@ class TimerSequenceRun(models.Model):
         if self.is_ended(now):
             raise ValidationError(_('timer "{id}" ended') % {"id": self.pk})
 
-        TimerSequencePause.objects.create(started_at=now, timer_sequence=self).save()
+        TimerSequencePause.objects.create(
+            started_at=now, timer_sequence_run=self
+        ).save()
 
 
 class TimerSequencePause(models.Model):
-    timer_sequence_run = models.ForeignKey(TimerSequenceRun, on_delete=models.CASCADE, related_name='pauses')
+    timer_sequence_run = models.ForeignKey(
+        TimerSequenceRun, on_delete=models.CASCADE, related_name="pauses"
+    )
 
     started_at = models.DateTimeField(null=False, auto_now_add=True)
     ended_at = models.DateTimeField(null=True)

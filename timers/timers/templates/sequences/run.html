@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block content %}
-  <script src="{% static 'js/timer.component.mjs' %}" type="module"></script>
+  <script src="{% static 'js/src/timer.component.mjs' %}" type="module"></script>
   <h1 class="font-thin text-2xl">{{ run.timer_sequence_name }}</h1>
   <div class="mt-6 flex flex-col justify-center items-center">
     <mzt-timer startedAt="{{ run.started_at|date:'c' }}" timers="{{ timers|join:',' }}" pauses="{{ pauses }}">
