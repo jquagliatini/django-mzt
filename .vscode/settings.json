@@ -3,6 +3,7 @@
   "[jinja][html]": {
     "editor.defaultFormatter": "monosans.djlint"
   },
+  "sqltools.useNodeRuntime": true,
   "sqltools.connections": [
     {
       "previewLimit": 50,

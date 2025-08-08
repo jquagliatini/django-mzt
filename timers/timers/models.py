@@ -1,40 +1,41 @@
-from typing import cast, Any
+from typing import cast
 from datetime import datetime, timedelta
 from django.db import models, transaction
-from django.conf import settings
+from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
 
 class TimerSequence(models.Model):
     name = models.TextField(null=False, blank=False)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(Session, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def run(self, now: datetime = datetime.now()) -> "TimerSequenceRun":
         return TimerSequenceRun.create(self, now)
 
-    @transaction.atomic
     @classmethod
     def create(
         cls,
         name: str,
         timers: list[timedelta],
-        user: Any,
+        session_key: str,
         now: datetime = datetime.now(),
     ) -> "TimerSequence":
         assert len(timers) > 0, "expected a non empty list of timers"
+ 
+        with transaction.atomic():
+            session = Session.objects.get(session_key=session_key)
+            sequence = TimerSequence(name=name, created_by=session, created_at=now)
+            sequence.save()
 
-        sequence = TimerSequence(name=name, created_by=user, created_at=now)
-        sequence.save()
+            for index, duration in enumerate(timers):
+                TimerSequenceDuration(
+                    index=index, duration=duration, timer_sequence=sequence
+                ).save()
 
-        for index, duration in enumerate(timers):
-            TimerSequenceDuration(
-                index=index, duration=duration, timer_sequence=sequence
-            ).save()
-
-        return sequence
+            return sequence
 
 
 class TimerSequenceDuration(models.Model):
