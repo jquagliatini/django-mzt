@@ -8,7 +8,14 @@
   {% if sequences %}
     <div class="flex flex-col gap-y-4 mt-6">
       {% for sequence in sequences %}
-        {% include "sequences/single-sequence.html" with sequence=sequence only %}
+        <form action="{% url 'run_sequence' sequence_id=sequence.id %}"
+              method="post"
+              class="w-64">
+          {% csrf_token %}
+          <button class="cursor-pointer" type="submit">
+            {% include "sequences/single-sequence.html" with sequence_name=sequence.name durations=sequence.durations.all %}
+          </button>
+        </form>
       {% endfor %}
     </div>
   {% endif %}

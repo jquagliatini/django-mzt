@@ -12,7 +12,7 @@ class TimerSequence(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def run(self, now: datetime = datetime.now()) -> "TimerSequenceRun":
+    def run(self, now: datetime) -> "TimerSequenceRun":
         return TimerSequenceRun.create(self, now)
 
     @classmethod
@@ -21,7 +21,7 @@ class TimerSequence(models.Model):
         name: str,
         timers: list[timedelta],
         session_key: str,
-        now: datetime = datetime.now(),
+        now: datetime,
     ) -> "TimerSequence":
         assert len(timers) > 0, "expected a non empty list of timers"
 
@@ -58,16 +58,18 @@ class TimerSequenceDuration(models.Model):
 
 class TimerSequenceRun(models.Model):
     timer_sequence = models.ForeignKey(
-        TimerSequence, null=True, on_delete=models.SET_NULL
+        TimerSequence, null=True, on_delete=models.SET_NULL, related_name='runs'
     )
     timer_sequence_name = models.TextField()
     started_at = models.DateTimeField(null=True)
 
     @classmethod
-    def create(cls, sequence: TimerSequence, now: datetime = datetime.now()):
-        return TimerSequenceRun(
+    def create(cls, sequence: TimerSequence, now: datetime):
+        run = TimerSequenceRun(
             timer_sequence=sequence, timer_sequence_name=sequence.name, started_at=now
         )
+        run.save()
+        return run
 
     def is_paused(self):
         running_pause = cast(
@@ -79,7 +81,7 @@ class TimerSequenceRun(models.Model):
 
         return running_pause is not None
 
-    def is_ended(self, now: datetime = datetime.now()) -> bool:
+    def is_ended(self, now: datetime) -> bool:
         if self.started_at is None or self.is_paused():
             return False
 
@@ -97,6 +99,15 @@ class TimerSequenceRun(models.Model):
             total_duration += pause.ended_at - pause.started_at
 
         return self.started_at + total_duration > now
+    
+    def toggle(self, now: datetime):
+        if self.is_ended(now):
+            return
+
+        if self.is_paused():
+            return self.unpause(now)
+
+        return self.pause(now)
 
     def unpause(self, now: datetime):
         if self.is_ended(now):
@@ -120,7 +131,7 @@ class TimerSequenceRun(models.Model):
 
 
 class TimerSequencePause(models.Model):
-    timer_sequence_run = models.ForeignKey(TimerSequenceRun, on_delete=models.CASCADE)
+    timer_sequence_run = models.ForeignKey(TimerSequenceRun, on_delete=models.CASCADE, related_name='pauses')
 
     started_at = models.DateTimeField(null=False, auto_now_add=True)
     ended_at = models.DateTimeField(null=True)

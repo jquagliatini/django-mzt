@@ -3,6 +3,7 @@
   "[jinja][html]": {
     "editor.defaultFormatter": "monosans.djlint"
   },
+  "nodejs-testing.extensions": [{ "parameters": [], "extensions": ["mjs", "cjs", "js"] }],
   "sqltools.useNodeRuntime": true,
   "sqltools.connections": [
     {

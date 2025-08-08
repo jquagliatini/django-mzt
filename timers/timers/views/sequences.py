@@ -1,12 +1,16 @@
-from datetime import timedelta
-from django.http import HttpRequest, HttpResponseNotFound, HttpResponseServerError
+import json
+from datetime import datetime, timedelta
+from django.http import HttpRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils.translation import gettext as _
+from django.db.models import Prefetch
+from django.db import transaction
+
 
 from timers.forms import TimerSequenceDurationFormSet, TimerSequenceForm
-from timers.models import TimerSequence
+from timers.models import TimerSequence, TimerSequenceRun
 
 
 def listSequences(request: HttpRequest):
@@ -80,17 +84,35 @@ def createSequence(request: HttpRequest):
 
     return render(request, "sequences/create.html", {"form": form, "formset": formset})
 
-def start_sequence(request: HttpRequest):
+def run_sequence(request: HttpRequest, sequence_id: int):
     if request.method != 'POST':
-        HttpResponseNotFound()
-
-    """
-    sequence_id = request.POST.get('id')
-    if sequence_id is None:
         return HttpResponseNotFound()
 
     sequence = TimerSequence.objects.get(pk=sequence_id)
-    run = sequence.run()
-    """
+    run = sequence.run(datetime.now())
 
-    return HttpResponseServerError('NotImplemented')
+    return redirect('detail_sequence_run', sequence_id=sequence_id, run_id=run.pk)
+
+@transaction.atomic
+def detail_sequence_run(request: HttpRequest, sequence_id: int, run_id: int):
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.create()
+        request.session.save()
+        session_key = request.session.session_key
+
+    sequence = TimerSequence.objects.filter(pk=sequence_id, created_by=session_key).prefetch_related(
+        Prefetch("runs", queryset=TimerSequenceRun.objects.filter(pk=run_id))
+    ).get()
+
+    run: TimerSequenceRun = sequence.runs.get() # type: ignore
+
+    if request.method == 'POST':
+        run.toggle(datetime.now()) # type: ignore
+        id = run.pk # type: ignore
+        run = TimerSequenceRun.objects.get(pk=id)
+    
+    timers = [x.duration for x in sequence.durations.all()] # type: ignore
+    pauses = json.dumps([{ 'startedAt': x.started_at, 'endedAt': x.ended_at } for x in run.pauses.all()]) # type: ignore
+
+    return render(request, 'sequences/run.html', { 'run': run, 'pauses': pauses, 'timers': timers })
