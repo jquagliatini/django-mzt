@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "connor4312.nodejs-testing",
+    "ms-python.debugpy",
+    "ms-python.python",
+    "ms-python.vscode-python-envs",
+    "ms-python.vscode-pylance"
+  ]
+}
