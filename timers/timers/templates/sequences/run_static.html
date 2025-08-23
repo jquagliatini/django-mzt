@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+{% load time static %}
+{% block content %}
+  <div class="mzt-container flex flex-col justify-center items-center gap-y-4{% if timer.state == 'ended' %} opacity-50{% endif %}">
+    <style>
+      .mzt-arc-container {
+        --progress: {{ timer.remaining_time_radians }}deg;
+        --arc-border-width: 20px;
+      }
+
+      .mzt-arc {
+          width: 200px;
+          aspect-ratio: 1;
+          padding: var(--arc-border-width);
+          border-radius: 50%;
+          transition: background 100ms;
+          background: var(--color-red-300);
+          --_g:/var(--arc-border-width) var(--arc-border-width) no-repeat radial-gradient(50% 50%,#000 97%,#0000);
+          mask: top var(--_g),
+            calc(50% + 50%*sin(var(--progress))) calc(50% - 50%*cos(var(--progress))) var(--_g),
+            linear-gradient(#0000 0 0) content-box intersect,
+            conic-gradient(#000 var(--progress),#0000 0);
+      }
+
+      .mzt-arc-bg {
+        position: absolute;
+        top: 0; right: 0; bottom: 0; left: 0;
+        width: 200px;
+        display: block;
+        border: var(--arc-border-width) solid var(--color-gray-100);
+        border-radius: 50%;
+      }
+    </style>
+    {# PAST TIMERS #}
+    <ul class="mzt-timers-past w-full text-center">
+      {% for past_timer in timer.past_timers %}
+        <li class="mzt-timer" data-timer="{{ past_timer|milliseconds }}">{{ past_timer|duration }}</li>
+      {% endfor %}
+    </ul>
+    {# Timer #}
+    <form method="post" class="relative size-[200px]">
+      {% csrf_token %}
+      <button class="mzt-arc-container rounded size-full flex justify-center items-center{% if timer.state == 'ended' %} cursor-not-allowed{% else %} cursor-pointer{% endif %}"
+              {% if timer.state == 'ended' %}disabled{% endif %}>
+        <svg xmlns="http://www.w3.org/2000/svg" class="size-12 shrink-0 grow-0">
+          {% if timer.state == 'running' %}
+            <use class="dark:block hidden" href="#icon.pause_filled"></use>
+            <use class="dark:hidden block" href="#icon.pause"></use>
+          {% else %}
+            <use class="dark:block hidden" href="#icon.play_filled"></use>
+            <use class="dark:hidden block" href="#icon.play"></use>
+          {% endif %}
+        </svg>
+        <div class="mzt-arc-bg"></div>
+        <div class="mzt-arc absolute top-0 bottom-0 left-0 right-0"></div>
+      </button>
+    </form>
+    <div class="mzt-time font-black text-5xl text-center tabular-nums dark:text-white">
+      {{ timer.remaining_time|duration }}
+    </div>
+    {# FUTURE TIMERS #}
+    <ul class="mzt-timers-future w-full text-center">
+      {% for future_timer in timer.future_timers %}
+        <li class="mzt-timer" data-timer="{{ future_timer|milliseconds }}">{{ future_timer|duration }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {{ timer.to_json|json_script:'mzt-data' }}
+  <script src="{% static 'js/src/timer.simple.mjs' %}" type="module"></script>
+{% endblock content %}

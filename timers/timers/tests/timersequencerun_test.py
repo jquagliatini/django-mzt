@@ -1,39 +1,51 @@
+import pytest
 from uuid import uuid4
-from django.test import TestCase
+from dataclasses import dataclass
 from datetime import timedelta, datetime
 from django.contrib.sessions.backends.db import SessionStore
 
 from timers.models import TimerSequence, TimerSequenceRun
 
 
-class TimerSequenceRunTest(TestCase):
+@dataclass(frozen=True, kw_only=True)
+class State:
     now: datetime
     sequence_run: TimerSequenceRun
 
-    def setUp(self):
-        self.now = datetime.fromisoformat("2025-05-01T10:00:00Z")
 
-        s = SessionStore()
-        s.create()
-        session_key = s.session_key
+@pytest.fixture
+def state() -> State:
+    now = datetime.fromisoformat("2025-05-01T10:00:00Z")
 
-        sequence = TimerSequence.create(
-            now=self.now,
-            session_key=session_key,
-            name=("sequence_" + str(uuid4())),
-            timers=[timedelta(minutes=10), timedelta(minutes=25)],
-        )
-        self.sequence_run = TimerSequenceRun.create(sequence=sequence, now=self.now)
+    s = SessionStore()
+    s.create()
+    session_key = s.session_key
 
-    def test_is_ended(self):
-        self.assertFalse(self.sequence_run.is_ended(self.now + timedelta(minutes=10)))
+    sequence = TimerSequence.create(
+        now=now,
+        session_key=session_key,
+        name=("sequence_" + str(uuid4())),
+        timers=[timedelta(minutes=10), timedelta(minutes=25)],
+    )
+    sequence_run = TimerSequenceRun.create(
+        sequence=sequence, durations=[], session_key=session_key, now=now
+    )
 
-        self.assertTrue(self.sequence_run.is_ended(self.now + timedelta(minutes=36)))
+    return State(now=now, sequence_run=sequence_run)
 
-    def test_is_paused(self):
-        self.assertFalse(self.sequence_run.is_paused())
 
-        self.sequence_run.pause(self.now + timedelta(minutes=5))
+@pytest.mark.django_db
+def test_is_ended(state: State):
+    assert state.sequence_run.is_ended(state.now + timedelta(minutes=10)) == False
 
-        paused = TimerSequenceRun.objects.get(pk=self.sequence_run.pk)
-        self.assertTrue(paused.is_paused())
+    assert state.sequence_run.is_ended(state.now + timedelta(minutes=36)) == True
+
+
+@pytest.mark.django_db
+def test_is_paused(state: State):
+    assert state.sequence_run.is_paused() == False
+
+    state.sequence_run.pause(state.now + timedelta(minutes=5))
+
+    paused = TimerSequenceRun.objects.get(pk=state.sequence_run.pk)
+    assert paused.is_paused() == True

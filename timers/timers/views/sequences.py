@@ -1,17 +1,17 @@
-import json
 from datetime import timedelta
+from typing import Iterable
 from django.http import HttpRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.db.models import Prefetch
 from django.db import transaction
 
 
 from timers.forms import TimerSequenceDurationFormSet, TimerSequenceForm
-from timers.models import TimerSequence, TimerSequenceRun
+from timers.models import TimerSequence, TimerSequencePause, TimerSequenceRun
+from timers.lib.projections import TimerProjection
 
 
 def listSequences(request: HttpRequest):
@@ -95,8 +95,14 @@ def run_sequence(request: HttpRequest, sequence_id: int):
     if request.method != "POST":
         return HttpResponseNotFound()
 
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.create()
+        request.session.save()
+        session_key = request.session.session_key
+
     sequence = TimerSequence.objects.get(pk=sequence_id)
-    run = sequence.run(timezone.now())
+    run = sequence.run(timezone.now(), session_key)
 
     return redirect("detail_sequence_run", sequence_id=sequence_id, run_id=run.pk)
 
@@ -109,32 +115,22 @@ def detail_sequence_run(request: HttpRequest, sequence_id: int, run_id: int):
         request.session.save()
         session_key = request.session.session_key
 
-    sequence = (
-        TimerSequence.objects.filter(pk=sequence_id, created_by=session_key)
-        .prefetch_related(
-            Prefetch("runs", queryset=TimerSequenceRun.objects.filter(pk=run_id))
-        )
-        .get()
+    run = TimerSequenceRun.objects.get(
+        pk=run_id, timer_sequence_id=sequence_id, created_by=session_key
     )
-
-    run: TimerSequenceRun = sequence.runs.get()  # type: ignore
 
     if request.method == "POST":
         run.toggle(timezone.now())  # type: ignore
-        id = run.pk  # type: ignore
-        run = TimerSequenceRun.objects.get(pk=id)
+        run.refresh_from_db()
 
-    timers = [x.duration for x in sequence.durations.all()]  # type: ignore
-    pauses = json.dumps(
-        [
-            {
-                "startedAt": x.started_at.isoformat(timespec="milliseconds"),  # type: ignore
-                "endedAt": x.ended_at.isoformat() if x.ended_at is not None else None,  # type: ignore
-            }
-            for x in run.pauses.all()  # type: ignore
-        ]
+    pauses: Iterable[TimerSequencePause] = TimerSequencePause.objects.filter(
+        timer_sequence_run=run
+    ).all()
+    timer = TimerProjection.from_timer_sequence_run(
+        now=timezone.now(), pauses=pauses, sequence_run=run
     )
 
-    return render(
-        request, "sequences/run.html", {"run": run, "pauses": pauses, "timers": timers}
-    )
+    response = render(request, "sequences/run_static.html", {"timer": timer})
+    response["Cache-Control"] = "no-store"
+
+    return response
