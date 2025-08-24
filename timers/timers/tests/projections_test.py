@@ -58,14 +58,14 @@ def state():
 @pytest.mark.django_db
 def test_full_state(state: State):
     projection = TimerProjection.from_timer_sequence_run(
-        now=state.now + timedelta(minutes=5, seconds=11),
+        now=state.now + timedelta(minutes=5, seconds=16),
         sequence_run=state.sequence_run,
         pauses=state.pauses,
     )
 
     assert projection.state == TimerState.running
-    assert projection.remaining_time == timedelta(seconds=4)
-    assert projection.total_remaining_time == timedelta(seconds=24)
+    assert projection.remaining_time == timedelta(seconds=19)
+    assert projection.total_remaining_time == timedelta(seconds=49)
 
     assert projection.past_timers == [timedelta(seconds=10)]
     assert projection.current_timer == timedelta(seconds=20)
