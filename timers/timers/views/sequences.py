@@ -172,7 +172,7 @@ def detail_sequence_run(request: HttpRequest, sequence_id: int, run_id: int):
         now=timezone.now(), pauses=pauses, sequence_run=run
     )
 
-    response = render(request, "sequences/run_static.html", {"timer": timer})
+    response = render(request, "sequences/run.html", {"timer": timer})
     response["Cache-Control"] = "no-store"
 
     return response
