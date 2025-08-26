@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, override
+from typing import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -37,7 +37,7 @@ class PausedDateTimePeriod(DateTimePeriod):
 
 
 @dataclass(frozen=True, kw_only=True)
-class SplittedPausableTimerSequence:
+class PausableTimerSequenceSnapshot:
     current: timedelta | None = None
     past: list[timedelta]
     future: list[timedelta]
@@ -61,7 +61,7 @@ class PausableTimerSequence:
 
         return total_duration
 
-    def split(self, now: datetime) -> SplittedPausableTimerSequence:
+    def snapshot(self, now: datetime) -> PausableTimerSequenceSnapshot:
         past: list[timedelta] = []
         future: list[timedelta] = []
         current: timedelta | None = None
@@ -80,7 +80,7 @@ class PausableTimerSequence:
                 remaining_time = pausable.end - now
                 total_remaining_time += pausable.end - now
 
-        return SplittedPausableTimerSequence(
+        return PausableTimerSequenceSnapshot(
             past=past,
             current=current,
             future=future,

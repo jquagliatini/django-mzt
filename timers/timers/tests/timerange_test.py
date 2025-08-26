@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from timers.lib.timerange import (
     DateTimePeriod,
     PausableTimerSequence,
-    SplittedPausableTimerSequence,
+    PausableTimerSequenceSnapshot,
 )
 
 
@@ -21,8 +21,8 @@ def test_PausableTimerSequence():
     assert pausable_sequence.total_duration == timedelta(minutes=1, seconds=5)
     assert pausable_sequence.ends_at == datetime.fromisoformat("2025-05-01T10:01:05Z")
 
-    splitted = pausable_sequence.split(datetime.fromisoformat("2025-05-01T10:00:21Z"))
-    assert splitted == SplittedPausableTimerSequence(
+    snapshot = pausable_sequence.snapshot(datetime.fromisoformat("2025-05-01T10:00:21Z"))
+    assert snapshot == PausableTimerSequenceSnapshot(
         past=[timedelta(seconds=10)],
         current=timedelta(seconds=20),
         future=[timedelta(seconds=30)],

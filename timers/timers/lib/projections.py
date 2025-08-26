@@ -77,7 +77,7 @@ class TimerProjection:
             durations,
             usable_pauses,
         )
-        projection = pausable_timer_sequence.split(now)
+        projection = pausable_timer_sequence.snapshot(now)
 
         state = TimerState.running
         if is_paused:
