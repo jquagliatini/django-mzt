@@ -133,7 +133,7 @@
   
     registerAddElementButton($formContainer);
 
-    const $btns = $root.getElementsByClassName('js_removeItem');
+    const $btns = $formContainer.getElementsByClassName('js_removeItem');
     for (const $btn of $btns) {
       registerRemoveElementButton($btn);
     }

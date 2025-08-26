@@ -20,6 +20,14 @@ class TimerSequence(models.Model):
         )
         return TimerSequenceRun.create(self, durations, now, session_key=session_key)
 
+    def update_timers(self, timers: Iterable[timedelta]):
+        with transaction.atomic():
+            TimerSequenceDuration.objects.filter(timer_sequence=self).delete()
+            for index, duration in enumerate(timers):
+                TimerSequenceDuration(
+                    index=index, duration=duration, timer_sequence=self
+                ).save()
+
     @classmethod
     def create(
         cls,
@@ -35,10 +43,7 @@ class TimerSequence(models.Model):
             sequence = TimerSequence(name=name, created_by=session, created_at=now)
             sequence.save()
 
-            for index, duration in enumerate(timers):
-                TimerSequenceDuration(
-                    index=index, duration=duration, timer_sequence=sequence
-                ).save()
+            sequence.update_timers(timers)
 
             return sequence
 

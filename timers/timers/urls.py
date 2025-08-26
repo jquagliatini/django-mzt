@@ -6,6 +6,11 @@ urlpatterns = [
     path("", view=sequences.listSequences, name="sequences"),
     path("sequences", view=sequences.createSequence, name="create_sequence"),
     path(
+        "sequences/<int:sequence_id>",
+        view=sequences.update_sequence,
+        name="update_sequence",
+    ),
+    path(
         "sequences/<int:sequence_id>/runs",
         view=sequences.run_sequence,
         name="run_sequence",

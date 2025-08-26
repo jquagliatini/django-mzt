@@ -1,16 +1,21 @@
-from datetime import timedelta
 from typing import Iterable
-from django.http import HttpRequest, HttpResponseNotFound
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.dateparse import parse_duration
 from django.utils.translation import gettext as _
 from django.db import transaction
 
 
 from timers.forms import TimerSequenceDurationFormSet, TimerSequenceForm
-from timers.models import TimerSequence, TimerSequencePause, TimerSequenceRun
+from timers.models import (
+    TimerSequence,
+    TimerSequenceDuration,
+    TimerSequencePause,
+    TimerSequenceRun,
+)
 from timers.lib.projections import TimerProjection
 
 
@@ -42,27 +47,13 @@ def createSequence(request: HttpRequest):
         form = TimerSequenceForm(request.POST)
         formset = TimerSequenceDurationFormSet(request.POST)
 
-        print("DEBUG")
-        print(request.POST)
-        print([x["duration"].value() for x in formset])
-
         if form.is_valid() and formset.is_valid():
             name: str = form["name"].value()
-            durations: list[str] = [x["duration"].value() for x in formset]
-
-            timers: list[timedelta] = []
-            for duration in durations:
-                match tuple(map(float, duration.split(":"))):
-                    case (hours, minutes, seconds):
-                        timers.append(
-                            timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                        )
-                    case (minutes, seconds):
-                        timers.append(timedelta(minutes=minutes, seconds=seconds))
-                    case (seconds,):
-                        timers.append(timedelta(seconds=seconds))
-                    case _:
-                        pass
+            timers = [
+                duration
+                for x in formset
+                if (duration := parse_duration(x["duration"].value())) is not None
+            ]
 
             TimerSequence.create(
                 name=name,
@@ -89,6 +80,57 @@ def createSequence(request: HttpRequest):
         formset = TimerSequenceDurationFormSet()
 
     return render(request, "sequences/create.html", {"form": form, "formset": formset})
+
+
+@transaction.atomic
+def update_sequence(request: HttpRequest, sequence_id: int) -> HttpResponse:
+    sequence = TimerSequence.objects.get(pk=sequence_id)
+    durations = TimerSequenceDuration.objects.filter(timer_sequence=sequence)
+
+    if request.method == "POST":
+        form = TimerSequenceForm(request.POST, initial={"name": sequence.name})
+        formset = TimerSequenceDurationFormSet(
+            request.POST, initial=[{"duration": x.duration} for x in durations]
+        )
+
+        if form.is_valid() and formset.is_valid():
+            if form.has_changed():
+                sequence.name = form["name"].value()
+                sequence.save()
+
+            if formset.has_changed():
+                sequence.update_timers(
+                    duration
+                    for x in formset
+                    if (duration := parse_duration(x["duration"].value())) is not None
+                )
+
+            messages.add_message(
+                request,
+                level=messages.SUCCESS,
+                message=_('"{name}" updated successfully')
+                % {"name": form["name"].value()},
+            )
+            return redirect("sequences", preserve_request=True)
+
+        else:
+            messages.add_message(
+                request,
+                level=messages.ERROR,
+                message=_('Impossible to update "{name}"') % {"name": sequence.name},
+            )
+
+    else:
+        form = TimerSequenceForm(data={"name": sequence.name})
+        formset = TimerSequenceDurationFormSet(
+            initial=[{"duration": x.duration} for x in durations]
+        )
+
+    return render(
+        request,
+        "sequences/update.html",
+        {"form": form, "formset": formset, "sequence": sequence},
+    )
 
 
 def run_sequence(request: HttpRequest, sequence_id: int):

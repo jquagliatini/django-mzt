@@ -1,14 +1,21 @@
+from typing import TypeVar
 from django import forms
 import timers.lib.classes as c
 
+_BaseFormT = TypeVar("_BaseFormT", bound=forms.BaseForm)
+
 
 class _TimerSequenceDurationForm(forms.Form):
-    template_name_div = "sequences/formsets/form.html"
     duration = forms.DurationField()
+
+
+class _BaseTimerSequenceDurationFormSet(forms.BaseFormSet):  # type: ignore
+    template_name = "sequences/formsets/form.html"
 
 
 TimerSequenceDurationFormSet = forms.formset_factory(
     _TimerSequenceDurationForm,
+    formset=_BaseTimerSequenceDurationFormSet,
     max_num=100,
     validate_max=True,
 )
