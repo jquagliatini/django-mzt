@@ -34,6 +34,10 @@ pnpm run css:watch # for development
 
 In development, [Ruff](https://docs.astral.sh/ruff/) is also the primary formatter.
 
+```sh
+uv run ruff format
+```
+
 ## Data modelling
 
 Modelling a timer is fun, because we need to design it in a stateless way.
@@ -77,11 +81,14 @@ erDiagram
 
 ## Testing
 
-Testing, relies on django testing (uniitest) and the [node test runner](https://nodejs.org/api/test.html).
+Testing, relies on [pytest](https://docs.pytest.org/en/stable/)
+and [pytest-django](https://pytest-django.readthedocs.io/en/latest/).
 
-## :sparkles: Components
+```sh
+uv run pytest
+```
 
-### Django template components
+## :sparkles: Django template components
 
 To stay DRY, while keeping a good readability, some components' classes are stored in
 utilities ([timers/lib/classes](./timers/timers/lib/classes.py)).
@@ -99,14 +106,3 @@ Currently there are 2 components:
 
 - Button (`'button'`)
 - Input (`'input'`)
-
-### Custom Elements
-
-#### `<mzt-timer />`
-
-All the timer displaying logic lives inside a
-[custom element](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements)
-(`<mzt-timer />`). See [js/src/timer.component.mjs](./timers/static_files/js/src/timer.component.mjs).
-
-This custom element, depends on some core logic separated in a `Timer` class. This class
-takes all the stateless elements from the Django Timer model, and creates a stateful iterable.
