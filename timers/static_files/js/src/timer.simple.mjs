@@ -61,7 +61,7 @@ async function countdown() {
 
     if (timer.remainingTime <= 0) {
       if (timer.currentTimer) timer.pastTimers.push(timer.currentTimer);
-      timer.currentTimer = timer.futureTimers.pop();
+      timer.currentTimer = timer.futureTimers.shift();
 
       if (!timer.currentTimer) {
         isEnded = true;
@@ -72,6 +72,7 @@ async function countdown() {
       const lastPastTimer = timer.pastTimers.at(-1);
       if (lastPastTimer) {
         const $li = document.createElement('li');
+        $li.classList.add('mzt-timer', 'line-through');
         $li.dataset.timer = String(lastPastTimer);
         $li.innerText = formatTimer(lastPastTimer);
 
@@ -79,8 +80,10 @@ async function countdown() {
         $pastTimers?.append($li);
       }
 
+      debugger;
+
       const $futureTimersList = document.querySelector(FUTURE_TIMERS);
-      $futureTimersList?.firstChild?.remove();
+      ($futureTimersList?.firstElementChild ?? $futureTimersList?.firstChild)?.remove();
     }
 
     /** @type {HTMLElement | null} */

@@ -1,5 +1,5 @@
 from typing import Iterable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 
@@ -19,13 +19,11 @@ class DateTimePeriod:
 @dataclass(frozen=True, kw_only=True)
 class PausedDateTimePeriod(DateTimePeriod):
     timer: DateTimePeriod
-    pause: DateTimePeriod | None = None
+    pauses: list[DateTimePeriod] = field(default_factory=list[DateTimePeriod])
 
     def add_pause(self, pause: DateTimePeriod) -> "PausedDateTimePeriod":
-        assert self.pause is None
-
         return PausedDateTimePeriod(
-            pause=pause,
+            pauses=self.pauses + [pause],
             timer=self.timer,
             start=self.start,
             end=self.start + (self.duration + pause.duration),
@@ -95,7 +93,7 @@ class PausableTimerSequence:
         durations: Iterable[timedelta],
         pauses: Iterable[DateTimePeriod],
     ) -> "PausableTimerSequence":
-        usable_pauses = [pause for pause in pauses]
+        usable_pauses = list(pauses)
 
         elapsed_time = timedelta()
         pausable_timers: list[PausedDateTimePeriod] = []
@@ -109,17 +107,16 @@ class PausableTimerSequence:
                 DateTimePeriod(start, end)
             )
 
-            found_pause = False
+            unused_pauses: list[DateTimePeriod] = []
             for pause in usable_pauses:
                 if pause.start <= timer.end:
-                    found_pause = True
-                    pausable_timers.append(timer.add_pause(pause))
+                    timer = timer.add_pause(pause)
                     elapsed_time += pause.duration
-                    usable_pauses.remove(pause)
-                    break
+                else:
+                    unused_pauses.append(pause)
 
-            if not found_pause:
-                pausable_timers.append(timer)
+            usable_pauses = unused_pauses
+            pausable_timers.append(timer)
 
         return cls(pausable_timers=pausable_timers)
 

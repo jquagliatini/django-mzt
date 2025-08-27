@@ -34,7 +34,8 @@
     {# PAST TIMERS #}
     <ul class="mzt-timers-past w-full text-center">
       {% for past_timer in timer.past_timers %}
-        <li class="mzt-timer" data-timer="{{ past_timer|milliseconds }}">{{ past_timer|duration }}</li>
+        <li class="mzt-timer line-through"
+            data-timer="{{ past_timer|milliseconds }}">{{ past_timer|duration }}</li>
       {% endfor %}
     </ul>
     {# Timer #}
