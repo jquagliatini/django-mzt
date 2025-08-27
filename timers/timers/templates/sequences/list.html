@@ -12,11 +12,10 @@
               method="post"
               class="w-64">
           {% csrf_token %}
-          <button class="cursor-pointer" type="submit">
-            {% include "sequences/single-sequence.html" with sequence_name=sequence.name durations=sequence.durations.all %}
-          </button>
+          {% include "sequences/single-sequence.html" with sequence_id=sequence.id sequence_name=sequence.name durations=sequence.durations.all %}
         </form>
       {% endfor %}
+      {% include "sequences/sequence_menu.html" %}
     </div>
   {% endif %}
 {% endblock content %}

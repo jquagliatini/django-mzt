@@ -1,19 +1,48 @@
-<div class="relative rounded dark:bg-neutral-800 p-4 shadow-md dark:shadow ring ring-rose-800 dark:ring-rose-700/40 dark:shadow-rose-700/40 size-64 flex flex-col justify-start items-center overflow-hidden grow-0"
-     title="{{ sequence_name }}">
-  {% for timer in durations %}
-    {% if forloop.first %}
-      <div class="border-6 border-rose-300 size-24 rounded-full flex flex-col items-center justify-center shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-12">
-          <use class="dark:block hidden" href="#icon.play_filled"></use>
-          <use class="dark:hidden block" href="#icon.play"></use>
-        </svg>
-      </div>
-      <h3 class="font-bold text-xl text-center mt-4 shrink-0 truncate self-start w-full"
-          title="{{ sequence_name }}">{{ sequence_name }}</h3>
-      <div class="text-5xl font-black text-center tabular-nums">{{ timer.duration }}</div>
-    {% else %}
-      <div class="font-black tabular-nums mt-2">{{ timer.duration }}</div>
-    {% endif %}
-  {% endfor %}
+{% load i18n %}
+<div class="relative rounded dark:bg-neutral-800 shadow-md dark:shadow ring ring-rose-800 dark:ring-rose-700/40 dark:shadow-rose-700/40 size-64 overflow-y-hidden grow-0"
+     title="{% blocktranslate %}start {{ sequence_name }}{% endblocktranslate %}">
+  <button class="w-full h-full my-4 cursor-pointer flex flex-col justify-start items-center">
+    {% for timer in durations %}
+      {% if forloop.first %}
+        <div class="border-6 border-rose-300 size-24 rounded-full flex flex-col items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-12">
+            <use class="dark:block hidden" href="#icon.play_filled"></use>
+            <use class="dark:hidden block" href="#icon.play"></use>
+          </svg>
+        </div>
+        <h3 class="font-bold text-xl text-center mt-4 shrink-0 truncate self-start w-full"
+            title="{{ sequence_name }}">{{ sequence_name }}</h3>
+        <div class="text-5xl font-black text-center tabular-nums">{{ timer.duration }}</div>
+      {% else %}
+        <div class="font-black tabular-nums mt-2">{{ timer.duration }}</div>
+      {% endif %}
+    {% endfor %}
+  </button>
   <div class="absolute h-3/12 left-0 right-0 -bottom-0.5 bg-white dark:bg-neutral-800 mask-t-from-0%"></div>
+  <button type="button"
+          class="sequence-menu-button absolute right-2 top-2 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-600/60 p-1 transition-colors duration-150 rounded-full size-10 flex items-center justify-center"
+          id="sequence_{{ sequence_id }}_menu_button"
+          aria-haspopup="true"
+          aria-controls="sequence_{{ sequence_id }}_menu">
+    <span class="sr-only">{% translate "menu" %}</span>
+    <svg xmlns="http://www.w3.org/2000/svg" class="size-8 shrink-0 grow-0">
+      <use href="#icon.vdots"></use>
+    </svg>
+  </button>
 </div>
+<template id="sequence_{{ sequence_id }}_menu_template">
+  <ul id="sequence_{{ sequence_id }}_menu"
+      role="menu"
+      aria-labelledby="sequence_{{ sequence_id }}_menu_button"
+      class="bg-white dark:bg-neutral-700 rounded-md shadow-md border border-neutral-200 dark:border-neutral-700 opacity-0 transition-opacity duration-100 w-48 absolute">
+    <li role="menuitem">
+      <a href="{% url 'update_sequence' sequence_id %}"
+         class="p-2 rounded-md flex items-center hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors duration-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="size-4">
+          <use href="#icon.pen_filled"></use>
+        </svg>
+        <span class="ml-1">{% translate 'edit' %}</span>
+      </a>
+    </li>
+  </ul>
+</template>
