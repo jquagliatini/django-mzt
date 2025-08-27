@@ -1,0 +1,63 @@
+<script>
+  const Overlay = {
+    open(options = {}) {
+      const $overlay = document.createElement('div');
+      $overlay.classList.add('mzt-overlay', 'absolute', 'inset-0');
+      $overlay.addEventListener('click', function () {
+        options.onClick?.();
+      });
+
+      document.body.appendChild($overlay);
+    },
+
+    close() {
+      document.querySelector('.mzt-overlay')?.remove();
+    }
+  }
+
+  /** @param {HTMLButtonElement} $button */
+  function onButtonClick($button) {
+    /** @param {Event} event */
+    return function (event) {
+      event.preventDefault();
+
+      const isExpanded = $button.getAttribute('aria-expanded') === 'true';
+      $button.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+
+      const targetMenu = $button.getAttribute('aria-controls');
+      
+      if (isExpanded) {
+        const $menu = document.getElementById(targetMenu);
+        if ($menu) {
+          $menu.addEventListener('transitionend', () => {
+            $menu.remove();
+          });
+          $menu.classList.replace('opacity-100', 'opacity-0');
+        }
+
+        Overlay.close();
+        return;
+      }
+      
+      Overlay.open({ onClick: () => $button.click() });
+
+      const $menuTemplate = document.importNode(document.getElementById(targetMenu + '_template').content, true);
+      document.body.appendChild($menuTemplate);
+
+      const rect = $button.getBoundingClientRect();
+
+      const $menu = document.getElementById(targetMenu);
+      $menu.classList.replace('opacity-0', 'opacity-100');
+      $menu.style.top = `${rect.top + 40}px`;
+      $menu.style.left = `${rect.left}px`;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    /** @type {NodeListOf<HTMLButtonElement>} */
+    const $buttons = document.querySelectorAll('.sequence-menu-button');
+    for (const $button of $buttons) { 
+      $button.addEventListener('click', onButtonClick($button));
+    }
+  });
+</script>
