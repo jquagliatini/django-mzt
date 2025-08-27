@@ -1,7 +1,8 @@
-import pytest
-from uuid import uuid4
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
+from uuid import uuid4
+
+import pytest
 from django.contrib.sessions.backends.db import SessionStore
 
 from timers.models import TimerSequence, TimerSequenceRun
@@ -36,16 +37,16 @@ def state() -> State:
 
 @pytest.mark.django_db
 def test_is_ended(state: State):
-    assert state.sequence_run.is_ended(state.now + timedelta(minutes=10)) == False
+    assert not state.sequence_run.is_ended(state.now + timedelta(minutes=10))
 
-    assert state.sequence_run.is_ended(state.now + timedelta(minutes=36)) == True
+    assert state.sequence_run.is_ended(state.now + timedelta(minutes=36))
 
 
 @pytest.mark.django_db
 def test_is_paused(state: State):
-    assert state.sequence_run.is_paused() == False
+    assert not state.sequence_run.is_paused()
 
     state.sequence_run.pause(state.now + timedelta(minutes=5))
 
     paused = TimerSequenceRun.objects.get(pk=state.sequence_run.pk)
-    assert paused.is_paused() == True
+    assert paused.is_paused()

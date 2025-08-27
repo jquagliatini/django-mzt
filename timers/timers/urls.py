@@ -1,6 +1,6 @@
 from django.urls import path
-from timers.views import sequences
 
+from timers.views import sequences
 
 urlpatterns = [
     path("", view=sequences.listSequences, name="sequences"),

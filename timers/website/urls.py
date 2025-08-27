@@ -1,4 +1,6 @@
-from debug_toolbar.toolbar import debug_toolbar_urls  # pyright: ignore[reportMissingTypeStubs]
+from debug_toolbar.toolbar import (  # pyright: ignore[reportMissingTypeStubs]
+    debug_toolbar_urls,
+)
 from django.contrib import admin
 from django.urls import include, path
 

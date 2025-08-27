@@ -1,22 +1,22 @@
 from typing import Iterable
-from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
-from django.shortcuts import redirect, render
+
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_duration
 from django.utils.translation import gettext as _
-from django.db import transaction
-
 
 from timers.forms import TimerSequenceDurationFormSet, TimerSequenceForm
+from timers.lib.projections import TimerProjection
 from timers.models import (
     TimerSequence,
     TimerSequenceDuration,
     TimerSequencePause,
     TimerSequenceRun,
 )
-from timers.lib.projections import TimerProjection
 
 
 def listSequences(request: HttpRequest):

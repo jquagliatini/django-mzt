@@ -1,6 +1,6 @@
-from typing import Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Iterable, Iterator
 
 
 @dataclass(frozen=True)

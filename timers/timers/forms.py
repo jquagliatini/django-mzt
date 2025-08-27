@@ -1,5 +1,7 @@
 from typing import TypeVar
+
 from django import forms
+
 import timers.lib.classes as c
 
 _BaseFormT = TypeVar("_BaseFormT", bound=forms.BaseForm)

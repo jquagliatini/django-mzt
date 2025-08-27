@@ -4,7 +4,6 @@ from django.db import migrations
 
 from timers.models import TimerSequenceRun
 
-
 update_durations_sql: str = """
 UPDATE timers_timersequencerun AS run                   
 SET timer_sequence_durations = dd.durations

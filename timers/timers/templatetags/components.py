@@ -1,6 +1,8 @@
 import enum
 from typing import Any
+
 from django import template
+
 import timers.lib.classes as c
 
 

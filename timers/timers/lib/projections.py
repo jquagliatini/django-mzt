@@ -1,10 +1,10 @@
 import enum
-from typing import Any, Iterable, cast
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
+from typing import Any, Iterable, cast
 
-from timers.models import TimerSequencePause, TimerSequenceRun
 from timers.lib.timerange import DateTimePeriod, PausableTimerSequence
+from timers.models import TimerSequencePause, TimerSequenceRun
 
 
 class TimerState(enum.StrEnum):

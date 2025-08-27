@@ -1,9 +1,10 @@
-import pytest
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from uuid import uuid4
-from datetime import timedelta, datetime
-from django.contrib.sessions.models import Session
+
+import pytest
 from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.sessions.models import Session
 
 from timers.lib.projections import TimerProjection, TimerState
 from timers.models import (
@@ -91,7 +92,7 @@ def test_pause_state(state: State):
     )
 
     assert projection.state == TimerState.paused
-    assert projection.ends_at == None
+    assert projection.ends_at is None
 
 
 @pytest.mark.django_db
